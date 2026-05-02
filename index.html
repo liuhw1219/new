@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>灵宠冒险：迷你王国</title>
+  <style>
+    :root{--bg:#f5fbff;--panel:#ffffffdd;--primary:#4aa3ff;--accent:#ffb84d;--green:#55c27a;--danger:#ff6d6d;--text:#2c3e50;--line:#9ec9ff;}
+    *{box-sizing:border-box;font-family:"Microsoft YaHei", "PingFang SC", sans-serif;}
+    body{margin:0;background:linear-gradient(180deg,#a9e7ff,#e8f7ff);color:var(--text);}
+    .game{max-width:1200px;margin:16px auto;padding:12px;}
+    .title{background:linear-gradient(90deg,#6bd5ff,#7fa9ff);border:3px solid #fff;border-radius:18px;padding:10px 16px;color:#fff;text-shadow:1px 1px 0 #468;box-shadow:0 6px 16px #7ab9ff66;}
+    .layout{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px;}
+    .panel{background:var(--panel);border:3px solid #fff;border-radius:16px;box-shadow:0 4px 12px #8bc2ff55;padding:12px;}
+    .scene{min-height:360px;background-size:cover;background-position:center;border-radius:12px;border:2px dashed #fff;position:relative;overflow:hidden;}
+    .sceneStyle-新手村{background-image:linear-gradient(120deg,#9be07f,#d5ffb9);}    
+    .sceneStyle-野外{background-image:linear-gradient(120deg,#94d4ff,#7bc8a4);}    
+    .sceneStyle-宠物森林{background-image:linear-gradient(120deg,#5dbb63,#9fe870);}    
+    .badge{display:inline-block;background:#fff;padding:3px 10px;border-radius:99px;border:2px solid var(--line);margin-right:8px;font-size:13px;}
+    .btn{border:none;background:linear-gradient(180deg,#7dc8ff,#4ea4ff);color:#fff;padding:8px 12px;border-radius:10px;margin:5px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #2c7fd0;}
+    .btn:hover{filter:brightness(1.05);} .btn:active{transform:translateY(2px);box-shadow:0 1px 0 #2c7fd0;}
+    .btn.secondary{background:linear-gradient(180deg,#ffd77c,#ffb545);box-shadow:0 3px 0 #d38b24;}
+    .btn.danger{background:linear-gradient(180deg,#ff9f9f,#ff6d6d);box-shadow:0 3px 0 #d44f4f;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .petCard{background:#fff;border:2px solid #bfe0ff;border-radius:12px;padding:8px;margin:6px 0;}
+    .petName{font-weight:700;}
+    .hpbar{height:12px;border-radius:8px;background:#e5eef7;overflow:hidden;border:1px solid #c8d9ea;}
+    .fill{height:100%;background:linear-gradient(90deg,#73db7b,#2bbf4f);}    
+    .battleLog{height:130px;overflow:auto;background:#f8fdff;border:2px solid #d9ecff;border-radius:10px;padding:6px;font-size:13px;}
+    .hidden{display:none;}
+    .small{font-size:12px;opacity:.85;}
+    .item{display:flex;justify-content:space-between;background:#fff;border:1px solid #d0e7ff;padding:6px;border-radius:8px;margin-bottom:6px;}
+    .story{position:absolute;left:10px;bottom:10px;background:#ffffffd8;padding:8px;border-radius:8px;max-width:70%;font-size:13px;}
+  </style>
+</head>
+<body>
+<div class="game">
+  <h1 class="title">🌟 灵宠冒险：迷你王国（单文件版）</h1>
+  <div class="layout">
+    <section class="panel">
+      <div id="mapTags"></div>
+      <div id="scene" class="scene sceneStyle-新手村">
+        <div class="story" id="story"></div>
+      </div>
+      <div>
+        <button class="btn" onclick="switchMap('新手村')">新手村</button>
+        <button class="btn" onclick="switchMap('野外')">野外</button>
+        <button class="btn" onclick="switchMap('宠物森林')">宠物森林</button>
+        <button class="btn secondary" onclick="explore()">探索</button>
+      </div>
+      <hr>
+      <h3>⚔️ 战斗界面</h3>
+      <div id="battle" class="hidden">
+        <div class="grid2">
+          <div id="playerBattle"></div>
+          <div id="enemyBattle"></div>
+        </div>
+        <div id="skillButtons"></div>
+        <button class="btn secondary" onclick="tryCatch()">捕捉球 x1</button>
+        <button class="btn" onclick="useItem('小回复药')">使用小回复药</button>
+        <button class="btn danger" onclick="escapeBattle()">逃跑</button>
+        <div class="battleLog" id="log"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h3>📦 功能架构（内置说明）</h3>
+      <div class="small" id="architecture"></div>
+      <h3>👤 玩家</h3>
+      <div id="playerInfo"></div>
+      <h3>🐾 宠物背包</h3>
+      <div id="petList"></div>
+      <h3>🎒 道具</h3>
+      <div id="bag"></div>
+    </aside>
+  </div>
+</div>
+<script>
+const petTemplates = [
+{name:'火绒狐', attr:'火', avatar:'🔥红橙色小狐，尾巴像火焰', growth:'快', base:{hp:90,atk:18,def:10,spd:14}, skills:[{name:'火花',pow:20,type:'火'},{name:'灼咬',pow:28,type:'火'}]},
+{name:'水泡龟', attr:'水', avatar:'💧蓝色小龟，龟壳有水纹', growth:'中', base:{hp:105,atk:14,def:16,spd:9}, skills:[{name:'水弹',pow:18,type:'水'},{name:'潮汐撞击',pow:26,type:'水'}]},
+{name:'叶灵兔', attr:'草', avatar:'🍃绿色长耳兔，耳尖发光', growth:'快', base:{hp:88,atk:17,def:11,spd:16}, skills:[{name:'叶刃',pow:20,type:'草'},{name:'藤鞭',pow:27,type:'草'}]},
+{name:'雷鸣雀', attr:'雷', avatar:'⚡黄色小鸟，羽毛带电', growth:'中快', base:{hp:82,atk:19,def:9,spd:18}, skills:[{name:'电击',pow:21,type:'雷'},{name:'雷羽突袭',pow:29,type:'雷'}]},
+{name:'岩甲熊', attr:'岩', avatar:'🪨棕灰小熊，手臂有岩甲', growth:'慢', base:{hp:120,atk:16,def:18,spd:7}, skills:[{name:'碎岩拳',pow:19,type:'岩'},{name:'山崩拍击',pow:30,type:'岩'}]},
+];
+const maps={
+'新手村':{style:'新手村',unlock:1,bg:'明亮草地与风车小屋',story:'村长：先在周边训练，收集你的第一队灵宠。',encounter:['叶灵兔','水泡龟']},
+'野外':{style:'野外',unlock:2,bg:'山道与溪流交错',story:'巡逻员：这里宠物更强，注意补给。',encounter:['火绒狐','雷鸣雀','叶灵兔']},
+'宠物森林':{style:'宠物森林',unlock:4,bg:'深绿森林与古树遗迹',story:'研究员：稀有宠物出没，建议4级后进入。',encounter:['雷鸣雀','岩甲熊','火绒狐']}
+};
+const player={name:'训练师',gold:100,map:'新手村',items:{'捕捉球':8,'小回复药':5},pets:[],active:0};
+let enemy=null,inBattle=false;
+function makePet(name,lv=1){const t=petTemplates.find(p=>p.name===name);const p=JSON.parse(JSON.stringify(t));p.lv=lv;p.exp=0;syncStats(p);p.curHp=p.hp;return p;}
+function levelNeed(lv){return Math.floor(20+lv*lv*8);} // 经验公式
+function growthRate(g){return g==='快'?1.15:g==='中快'?1.1:g==='中'?1.0:0.9;}
+function syncStats(p){const r=growthRate(p.growth);p.hp=Math.floor(p.base.hp+(p.lv-1)*8*r);p.atk=Math.floor(p.base.atk+(p.lv-1)*2.2*r);p.def=Math.floor(p.base.def+(p.lv-1)*1.8*r);p.spd=Math.floor(p.base.spd+(p.lv-1)*1.6*r);}
+function log(t){const el=document.getElementById('log');el.innerHTML+=`<div>• ${t}</div>`;el.scrollTop=99999;}
+function render(){
+  const me=player.pets[player.active];
+  document.getElementById('mapTags').innerHTML=`<span class='badge'>当前地图：${player.map}</span><span class='badge'>金币：${player.gold}</span>`;
+  document.getElementById('scene').className=`scene sceneStyle-${maps[player.map].style}`;
+  document.getElementById('story').innerText=`${maps[player.map].story}\n背景：${maps[player.map].bg}\n可遇宠物：${maps[player.map].encounter.join('、')}`;
+  document.getElementById('playerInfo').innerHTML=`主战宠：${me.name} Lv.${me.lv} (${me.attr})<div class='hpbar'><div class='fill' style='width:${Math.max(0,me.curHp/me.hp*100)}%'></div></div><div class='small'>HP ${me.curHp}/${me.hp} | EXP ${me.exp}/${levelNeed(me.lv)}</div>`;
+  document.getElementById('petList').innerHTML=player.pets.map((p,i)=>`<div class='petCard'><div class='petName'>${p.name} Lv.${p.lv} ${i===player.active?'⭐':''}</div><div>${p.avatar}</div><div class='small'>${p.attr} | 成长：${p.growth}</div><button class='btn' onclick='setActive(${i})'>设为主战</button></div>`).join('');
+  document.getElementById('bag').innerHTML=Object.entries(player.items).map(([k,v])=>`<div class='item'><span>${k}</span><b>${v}</b></div>`).join('');
+  renderArchitecture();
+  if(inBattle) renderBattle();
+}
+function renderArchitecture(){document.getElementById('architecture').innerHTML=`
+<b>场景模块</b>：地图切换、剧情提示、探索入口。<br>
+<b>功能模块</b>：背包、宠物管理、战斗、捕捉、升级。<br>
+<b>宠物系统</b>：属性、成长曲线、技能、等级经验。<br>
+<b>背包系统</b>：捕捉球/药水消耗与显示。<br>
+<b>战斗系统</b>：回合制技能伤害、敌方反击、掉落经验。`}
+function setActive(i){player.active=i;render();}
+function switchMap(name){const avg=Math.floor(player.pets.reduce((a,b)=>a+b.lv,0)/player.pets.length);if(avg<maps[name].unlock){alert(`需要平均等级≥${maps[name].unlock}`);return;}player.map=name;render();}
+function explore(){if(inBattle)return;const list=maps[player.map].encounter;const n=list[Math.floor(Math.random()*list.length)];const lv=Math.max(1,Math.floor((Math.random()*2+1)+(player.map==='宠物森林'?2:player.map==='野外'?1:0)));enemy=makePet(n,lv);inBattle=true;document.getElementById('battle').classList.remove('hidden');document.getElementById('log').innerHTML='';log(`遇到了野生 ${enemy.name} Lv.${enemy.lv}！`);renderBattle();}
+function renderBattle(){const me=player.pets[player.active];document.getElementById('playerBattle').innerHTML=`<div class='petCard'><b>我方 ${me.name} Lv.${me.lv}</b><div>${me.avatar}</div><div class='hpbar'><div class='fill' style='width:${Math.max(0,me.curHp/me.hp*100)}%'></div></div><div class='small'>HP ${me.curHp}/${me.hp}</div></div>`;
+  document.getElementById('enemyBattle').innerHTML=`<div class='petCard'><b>敌方 ${enemy.name} Lv.${enemy.lv}</b><div>${enemy.avatar}</div><div class='hpbar'><div class='fill' style='width:${Math.max(0,enemy.curHp/enemy.hp*100)}%'></div></div><div class='small'>HP ${enemy.curHp}/${enemy.hp}</div></div>`;
+  document.getElementById('skillButtons').innerHTML=me.skills.map((s,i)=>`<button class='btn' onclick='useSkill(${i})'>${s.name}(${s.type})</button>`).join('');}
+function typeBonus(a,d){const map={'火':'草','草':'水','水':'火','雷':'水','岩':'雷'};return map[a]===d?1.2:1.0;}
+function damage(att,def,pow,bonus){return Math.max(1,Math.floor((att/Math.max(1,def))*pow*bonus*(0.85+Math.random()*0.3)));} // 伤害公式
+function useSkill(i){if(!inBattle)return;const me=player.pets[player.active],s=me.skills[i];const d=damage(me.atk,enemy.def,s.pow,typeBonus(s.type,enemy.attr));enemy.curHp-=d;log(`${me.name} 使用 ${s.name} 造成 ${d} 点伤害`);if(enemy.curHp<=0){winBattle();return;}enemyTurn();}
+function enemyTurn(){const me=player.pets[player.active],s=enemy.skills[Math.floor(Math.random()*enemy.skills.length)];const d=damage(enemy.atk,me.def,s.pow,typeBonus(s.type,me.attr));me.curHp-=d;log(`敌方 ${enemy.name} 使用 ${s.name} 造成 ${d} 点伤害`);if(me.curHp<=0){me.curHp=0;log(`${me.name} 倒下了，自动回村恢复。`);player.map='新手村';me.curHp=me.hp;inBattle=false;document.getElementById('battle').classList.add('hidden');}render();}
+function winBattle(){const me=player.pets[player.active];const exp=12+enemy.lv*8;me.exp+=exp;player.gold+=10+enemy.lv*2;log(`战斗胜利！获得 EXP ${exp}，金币增加。`);while(me.exp>=levelNeed(me.lv)){me.exp-=levelNeed(me.lv);me.lv++;syncStats(me);me.curHp=me.hp;log(`${me.name} 升到 Lv.${me.lv}！属性成长。`);}inBattle=false;document.getElementById('battle').classList.add('hidden');render();}
+function tryCatch(){if(!inBattle)return;if((player.items['捕捉球']||0)<=0){log('没有捕捉球了。');return;}player.items['捕捉球']--;const hpRate=Math.max(0.05,enemy.curHp/enemy.hp);const chance=0.65*(1-hpRate);if(Math.random()<chance){player.pets.push(makePet(enemy.name,Math.max(1,enemy.lv-1)));log(`捕捉成功！${enemy.name} 加入队伍。`);inBattle=false;document.getElementById('battle').classList.add('hidden');}else{log('捕捉失败！敌方反击！');enemyTurn();}render();}
+function useItem(name){const me=player.pets[player.active];if((player.items[name]||0)<=0){log(`没有${name}`);return;}if(name==='小回复药'){player.items[name]--;const heal=35;me.curHp=Math.min(me.hp,me.curHp+heal);log(`${me.name} 回复 ${heal} HP`);if(inBattle)enemyTurn();}render();}
+function escapeBattle(){if(!inBattle)return;const ok=Math.random()<0.75;if(ok){log('成功逃跑。');inBattle=false;document.getElementById('battle').classList.add('hidden');}else{log('逃跑失败！');enemyTurn();}render();}
+function init(){player.pets=[makePet('火绒狐',1),makePet('叶灵兔',1)];render();}
+init();
+</script>
+</body>
+</html>
